@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Excel File</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to ensure 'Inter' font and better form appearance */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            max-width: 90%;
+            width: 500px;
+        }
+        .form-group label {
+            font-weight: 600; /* semi-bold */
+            color: #374151; /* gray-700 */
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        /* Custom styling for file input to make it visually appealing */
+        .form-group input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-width: 1px;
+            border-color: #d1d5db; /* gray-300 */
+            border-radius: 0.5rem; /* rounded-lg */
+            background-color: #f9fafb; /* gray-50 */
+            color: #1f2937; /* gray-900 */
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .form-group input[type="file"]:focus {
+            outline: none;
+            border-color: #2563eb; /* blue-600 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* ring-blue-500/50 */
+        }
+        .submit-button {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem; /* rounded-lg */
+            background-color: #2563eb; /* blue-600 */
+            color: #ffffff; /* white */
+            font-weight: 600; /* semi-bold */
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            border: none; /* Remove default button border */
+        }
+        .submit-button:hover {
+            background-color: #1d4ed8; /* blue-700 */
+        }
+        /* Styling for Django messages */
+        .messages {
+            margin-bottom: 1.5rem;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-weight: 500;
+        }
+        .messages .success {
+            background-color: #d1fae5; /* green-100 */
+            color: #065f46; /* green-800 */
+            border: 1px solid #34d399; /* green-400 */
+        }
+        .messages .error {
+            background-color: #fee2e2; /* red-100 */
+            color: #991b1b; /* red-800 */
+            border: 1px solid #ef4444; /* red-400 */
+        }
+    </style>
+</head>
+<body class="font-inter antialiased">
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Upload Product Data</h1>
+
+        {# Display Django messages (e.g., success/error messages) #}
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="{{ message.tags }} p-3 mb-3 rounded-lg border">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {# File upload form #}
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %} {# Django's CSRF protection #}
+            <div class="form-group">
+                <label for="{{ form.excel_file.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">{{ form.excel_file.label }}</label>
+                {{ form.excel_file }} {# Renders the file input field #}
+                {% if form.excel_file.help_text %}
+                    <p class="text-gray-500 text-xs mt-1">{{ form.excel_file.help_text }}</p>
+                {% endif %}
+                {% if form.excel_file.errors %}
+                    <div class="text-red-600 text-xs mt-1">
+                        {% for error in form.excel_file.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <button type="submit" class="submit-button">Upload File</button>
+        </form>
+    </div>
+</body>
+</html>
+
