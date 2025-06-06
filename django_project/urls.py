@@ -19,9 +19,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+# Import the NinjaAPI instance
+from myapp.api import api
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('products/', include('myapp.urls')), # Include your app's URLs
+    path('api/', api.urls), # Mount the Django Ninja API at /api/
 ]
 
 # Serve media files during development
