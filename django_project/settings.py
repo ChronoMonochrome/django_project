@@ -133,7 +133,7 @@ DATABASES = {
         'NAME': 'test_db',
         'USER': 'chrono',
         'PASSWORD': 'd4d5Nf3Nc6',
-        'HOST': 'localhost',  # Use 'localhost' if PostgreSQL is on the same server
+        'HOST': 'db',  # Use 'localhost' if PostgreSQL is on the same server
         'PORT': '',           # PostgreSQL default port is 5432. Leave empty for default.
     }
 }
@@ -173,6 +173,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # Nginx will serve these files
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

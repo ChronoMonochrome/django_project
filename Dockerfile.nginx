@@ -1,0 +1,16 @@
+# Use the official Nginx base image
+FROM nginx:latest
+
+# Remove default Nginx configuration
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy custom Nginx configuration file
+COPY nginx/nginx.conf /etc/nginx/conf.d/
+
+# Expose port 8099 for incoming HTTP requests
+EXPOSE 8099
+
+# Command to start Nginx
+CMD ["nginx", "-g", "daemon off;"]
+
+

@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # Django web application with Bjoern WSGI server
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    command: python run_bjoern.py
+    volumes:
+      - .:/app
+      - static_data:/app/staticfiles # Volume for Django static files
+      - media_data:/app/media       # Volume for Django media files
+    expose:
+      - 8011 # Expose to linked services, not directly to host
+    # Explicitly pass environment variables for database connection details
+    # This helps ensure they are available for 'docker-compose run' commands
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${DJANGO_DEBUG}
+    env_file:
+      - .env # Also load from .env for consistency and other variables
+    depends_on:
+      db:
+        condition: service_healthy # Wait until DB is healthy
+      redis:
+        condition: service_started # Wait until Redis is started
+    restart: always
+
+  # Nginx reverse proxy
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "8099:8099" # Map host port 80 to container port 80
+    volumes:
+      - static_data:/app/staticfiles # Mount static files from Django service
+      - media_data:/app/media       # Mount media files from Django service
+    depends_on:
+      - web # Nginx depends on the web service to be running
+    restart: always
+
+  # PostgreSQL database
+  db:
+    image: postgres:14-alpine # Using a specific version and alpine for smaller size
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/ # Persistent volume for database data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    expose:
+      - 5432 # Expose to linked services, not directly to host
+    restart: always
+    healthcheck: # Healthcheck to ensure DB is ready before Django connects
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Celery broker and backend
+  redis:
+    image: redis:6-alpine
+    expose:
+      - 6379 # Expose to linked services, not directly to host
+    restart: always
+
+  # Celery worker (separate Dockerfile for clarity and specific dependencies)
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.django # Using the same Dockerfile as Django web
+    command: celery -A django_project worker -l info --pool=prefork --concurrency=2 # Run Celery worker command
+    volumes:
+      - .:/app
+    environment: # Explicitly pass environment variables for database connection details
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${DJANGO_DEBUG}
+    env_file:
+      - .env # Also load from .env for consistency and other variables
+    depends_on:
+      db:
+        condition: service_healthy # Worker also needs database access
+      redis:
+        condition: service_started
+    restart: always
+
+volumes:
+  postgres_data:
+  static_data:
+  media_data:
+
+
