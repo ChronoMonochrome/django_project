@@ -79,6 +79,8 @@ services:
     command: celery -A django_project worker -l info --pool=prefork --concurrency=2 # Run Celery worker command
     volumes:
       - .:/app
+      - static_data:/app/staticfiles # Volume for Django static files
+      - media_data:/app/media       # Volume for Django media files
     environment: # Explicitly pass environment variables for database connection details
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}

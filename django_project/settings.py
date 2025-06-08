@@ -27,8 +27,15 @@ SECRET_KEY = 'django-insecure-uhw+ojei(&_a3-d7z&$ud$7st*cg*vff+5$efwbku8#3ue$o(r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+   'localhost',
+   '127.0.0.1',
+   'web'
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8099'
+]
 
 # Application definition
 
@@ -49,8 +56,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0' # Using Redis as broker
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0' # Using Redis as result backend
+CELERY_BROKER_URL = 'redis://redis:6379/0' # Using Redis as broker
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0' # Using Redis as result backend
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -132,7 +139,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'test_db',
         'USER': 'chrono',
-        'PASSWORD': 'd4d5Nf3Nc6',
+        'PASSWORD': 'test_password',
         'HOST': 'db',  # Use 'localhost' if PostgreSQL is on the same server
         'PORT': '',           # PostgreSQL default port is 5432. Leave empty for default.
     }
@@ -179,3 +186,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # Nginx will serve these fil
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+APPEND_SLASH = True
+
