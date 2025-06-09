@@ -1,6 +1,9 @@
 # Django project
 
 This project provides a robust Django application for uploading Excel files, processing product data asynchronously, and managing it via a secure API. It leverages Celery for background tasks, Redis as a message broker, PostgreSQL for data storage, and is deployed using Bjoern as the WSGI server behind Nginx.
+<video src="https://github.com/user-attachments/assets/169d8551-1a31-4f5e-a775-cebbc07ece6d" controls="controls" style="max-width: 730px;">
+</video>
+
 
 ## Features
 
@@ -16,7 +19,6 @@ This project provides a robust Django application for uploading Excel files, pro
     
 -   **Dockerized Deployment:** Full production-ready setup with Docker Compose, including containers for Django (Bjoern), Nginx, PostgreSQL, and Redis.
     
-
 ## Technologies Used
 
 -   **Backend:** Python, Django
