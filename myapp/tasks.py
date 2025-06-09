@@ -25,7 +25,6 @@ def import_products_from_excel(self, file_path):
 
         # Define a mapping from expected Excel column headers (in Russian, case-insensitive)
         # to Django model field names.
-        # 'товарная группа' will be specially handled as a foreign key to ProductGroup.
         column_mapping = {
             'бренд': 'brand',
             'уникальный артикул': 'article',
@@ -41,7 +40,6 @@ def import_products_from_excel(self, file_path):
         df.columns = df.columns.str.strip().str.lower()
 
         # Rename columns based on the mapping
-        # Create a reverse mapping for robust renaming, handling only columns that exist
         current_cols = df.columns.tolist()
         rename_dict = {
             excel_col.lower(): model_field
@@ -51,34 +49,73 @@ def import_products_from_excel(self, file_path):
         df = df.rename(columns=rename_dict)
 
         # Ensure only relevant columns are kept for processing
-        # This also ensures that if some expected columns are missing, they will be skipped
         valid_model_fields = set(column_mapping.values())
         df = df[[col for col in df.columns if col in valid_model_fields]]
 
-        # Use a transaction to ensure atomicity. If any row fails, the whole transaction can be rolled back.
-        # However, here we choose to log errors and continue for individual rows.
-        # For strict atomicity of the entire file, remove the inner try-except.
+        # --- New logic for product groups ---
+
+        # 1. Get or create the parent "Автозапчасти" group
+        # This will be the default group if no other specific group is found or if it's the parent.
+        auto_parts_group, created = ProductGroup.objects.get_or_create(
+            name="Автозапчасти",
+            defaults={'parent_id': None} # Ensure parent_id is null for the top-level group
+        )
+        if created:
+            logger.info(f"Task {task_id}: Created new parent ProductGroup: {auto_parts_group.name}")
+        else:
+            logger.info(f"Task {task_id}: Found existing parent ProductGroup: {auto_parts_group.name}")
+
         with transaction.atomic():
             for index, row in df.iterrows():
                 row_number = index + 2 # Excel rows are 1-indexed, and we start from the second row (after headers)
                 self.update_state(state='PROGRESS', meta={'current_row': row_number, 'total_rows': len(df)})
                 try:
-                    product_group_name = row.get('product_group_name')
-                    product_group_instance = None
-                    if product_group_name and pd.notna(product_group_name):
-                        # Ensure the product_group_name is a string
-                        product_group_name = str(product_group_name).strip()
-                        if product_group_name: # Check if it's not empty after stripping
-                            product_group_instance, created = ProductGroup.objects.get_or_create(
-                                name=product_group_name
-                            )
-                            if created:
-                                logger.info(f"Task {task_id}: Created new ProductGroup: {product_group_name}")
-                        else:
-                            logger.warning(f"Task {task_id}: Row {row_number}: 'product_group_name' is an empty string after stripping. Product will have no group.")
-                    else:
-                        logger.warning(f"Task {task_id}: Row {row_number}: 'product_group_name' is missing or NaN. Product will have no group.")
+                    product_group_name_from_excel = row.get('product_group_name')
+                    product_group_instance = None # Initialize as None
 
+                    # Clean product group name from excel
+                    if product_group_name_from_excel and pd.notna(product_group_name_from_excel):
+                        product_group_name_from_excel = str(product_group_name_from_excel).strip()
+                    else:
+                        product_group_name_from_excel = "" # Treat NaN or empty as empty string
+
+                    # Determine the correct product group and its parent
+                    if not product_group_name_from_excel:
+                        # If group is not specified in Excel, default to "Автозапчасти"
+                        product_group_instance = auto_parts_group
+                        logger.info(f"Task {task_id}: Row {row_number}: No product group specified, defaulting to '{auto_parts_group.name}'.")
+                    elif product_group_name_from_excel == "Автозапчасти":
+                        # If it's explicitly "Автозапчасти", use the already fetched instance
+                        product_group_instance = auto_parts_group
+                        # Ensure its parent_id is None, in case it was somehow linked before
+                        if product_group_instance.parent_id is not None:
+                            product_group_instance.parent_id = None
+                            product_group_instance.save()
+                            logger.info(f"Task {task_id}: Updated '{product_group_instance.name}' parent_id to None.")
+                    elif product_group_name_from_excel in ["Рулевое управление", "Подвеска колеса"]:
+                        # For child groups, create/get them and set their parent_id
+                        child_group, created = ProductGroup.objects.get_or_create(
+                            name=product_group_name_from_excel
+                        )
+                        if created:
+                            logger.info(f"Task {task_id}: Created new child ProductGroup: {child_group.name}")
+                        
+                        # Set or update parent_id to auto_parts_group's ID
+                        if child_group.parent_id != auto_parts_group.id:
+                            child_group.parent_id = auto_parts_group.id
+                            child_group.save()
+                            logger.info(f"Task {task_id}: Linked '{child_group.name}' to parent '{auto_parts_group.name}'.")
+                        
+                        product_group_instance = child_group
+                    else:
+                        # For any other product group name found in Excel
+                        product_group_instance, created = ProductGroup.objects.get_or_create(
+                            name=product_group_name_from_excel
+                        )
+                        if created:
+                            logger.info(f"Task {task_id}: Created non-auto-related ProductGroup: {product_group_instance.name}")
+                        # Other groups typically don't have a parent_id by this logic unless explicitly defined elsewhere
+                        # We don't touch their parent_id if it's already set by something else.
 
                     # Prepare product data, excluding the 'product_group_name' placeholder
                     product_data = {
@@ -131,5 +168,3 @@ def import_products_from_excel(self, file_path):
         if os.path.exists(file_path):
             os.remove(file_path)
             logger.info(f"Task {task_id}: Cleaned up temporary file: {file_path}")
-
-
