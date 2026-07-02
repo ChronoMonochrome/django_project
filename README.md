@@ -1,176 +1,154 @@
 # Django project
 
-This project provides a robust Django application for uploading Excel files, processing product data asynchronously, and managing it via a secure API. It leverages Celery for background tasks, Redis as a message broker, PostgreSQL for data storage, and is deployed using Bjoern as the WSGI server behind Nginx.
-<video src="https://github.com/user-attachments/assets/12a48369-2444-490a-9aa1-d1e51bbc1c9c" controls="controls" style="max-width: 730px;">
-</video>
+> **Примечание:** Это учебный проект.
 
+Этот проект представляет собой надежное Django-приложение для загрузки файлов Excel, асинхронной обработки данных о товарах и управления ими через защищенный API. Он использует Celery для фоновых задач, Redis в качестве брокера сообщений, PostgreSQL для хранения данных и развертывается с использованием WSGI-сервера Bjoern за обратным прокси-сервером Nginx.
 
+## Функционал
 
+* **Загрузка файлов Excel:** Простая загрузка данных о товарах из файлов `.xlsx` через веб-интерфейс.
+* **Асинхронная обработка:** Использование Celery для обработки файлов Excel в фоновом режиме, что предотвращает тайм-ауты и улучшает пользовательский опыт.
+* **Управление товарами и группами товаров:** Хранение и организация информации о товарах, включая бренд, артикул, торговые номера (кроссы), описания и пользовательские характеристики. Поддерживает иерархические группы товаров со специальной логикой для категории «Автозапчасти» (Auto Parts) и её подгрупп («Рулевое управление», «Подвеска колеса»).
+* **Аутентификация пользователей:** Включает стандартную функциональность регистрации, входа и выхода пользователей.
+* **API с защитой JWT:** Предоставляет защищенные конечные точки RESTful API для получения, добавления и обновления «кроссов» товаров (торговых номеров), защищенные с помощью JSON Web Tokens (JWT).
+* **Развертывание в Docker:** Полностью готовая к работе конфигурация с Docker Compose, включающая контейнеры для Django (Bjoern), Nginx, PostgreSQL и Redis.
 
+## Используемые технологии
 
+* **Бэкенд:** Python, Django
+* **WSGI-сервер:** Bjoern
+* **Обратный прокси:** Nginx
+* **База данных:** PostgreSQL
+* **Асинхронные задачи:** Celery
+* **Брокер сообщений / бэкенд:** Redis
+* **API-фреймворк:** Django Ninja
+* **JWT-аутентификация:** `djangorestframework-simplejwt`
+* **Обработка Excel:** Pandas, OpenPyXL
 
-## Features
+## Начало работы
 
--   **Excel File Upload:** Easily upload product data from `.xlsx` files via a web interface.
-    
--   **Asynchronous Processing:** Utilizes Celery to handle Excel file processing in the background, preventing timeouts and improving user experience.
-    
--   **Product & Product Group Management:** Stores and organizes product information, including brand, article, trading numbers (crosses), descriptions, and custom specifications. Supports hierarchical product groups, with specific logic for "Автозапчасти" (Auto Parts) and its sub-groups ("Рулевое управление", "Подвеска колеса").
-    
--   **User Authentication:** Includes standard user registration, login, and logout functionalities.
-    
--   **JWT-Protected API:** Provides secure RESTful API endpoints for retrieving, adding, and updating product "crosses" (trading numbers), protected by JSON Web Tokens (JWT).
-    
--   **Dockerized Deployment:** Full production-ready setup with Docker Compose, including containers for Django (Bjoern), Nginx, PostgreSQL, and Redis.
-    
-## Technologies Used
+Эти инструкции помогут вам развернуть и запустить проект на локальной машине с помощью Docker Compose.
 
--   **Backend:** Python, Django
-    
--   **WSGI Server:** Bjoern
-    
--   **Reverse Proxy:** Nginx
-    
--   **Database:** PostgreSQL
-    
--   **Asynchronous Tasks:** Celery
-    
--   **Message Broker/Backend:** Redis
-    
--   **API Framework:** Django Ninja
-    
--   **JWT Authentication:**  `djangorestframework-simplejwt`
-    
--   **Excel Processing:** Pandas, OpenPyXL
-    
+### Требования
 
-## Getting Started
+Перед началом работы убедитесь, что у вас установлено следующее ПО:
 
-These instructions will get your project up and running on your local machine using Docker Compose.
+* **Docker:** [Установка Docker Engine](https://docs.docker.com/engine/install/)
+* **Docker Compose:** [Установка Docker Compose](https://docs.docker.com/compose/install/) (обычно поставляется вместе с Docker Desktop)
 
-### Prerequisites
+### Настройка
 
-Before you begin, ensure you have the following installed:
-
--   **Docker:**  [Install Docker Engine](https://docs.docker.com/engine/install/ "null")
-    
--   **Docker Compose:**  [Install Docker Compose](https://docs.docker.com/compose/install/ "null") (usually comes with Docker Desktop)
-    
-
-### Setup
-
-1.  **Clone the Repository:**
-    
-    ```
-    git clone <your-repository-url>
-    cd django_project # Or whatever your project root directory is named
-    
-    ```
-    
-2.  **Create `.env` file:** Create a file named `.env` in the root of your project directory (`django_project/`) and populate it with your environment variables. This file will be used by Docker Compose to configure your services.
-    
-    ```
-    # .env
-    POSTGRES_DB=django_db
-    POSTGRES_USER=django_user
-    POSTGRES_PASSWORD=django_password
-    POSTGRES_HOST=db
-    POSTGRES_PORT=5432
-    DJANGO_SECRET_KEY=your_very_secret_and_long_key_for_django # IMPORTANT: CHANGE THIS IN PRODUCTION!
-    DJANGO_DEBUG=True
-    
-    ```
-    
-    -   **`DJANGO_SECRET_KEY`**: Replace `your_very_secret_and_long_key_for_django` with a strong, randomly generated key. You can generate one using `python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'`.
-        
-3.  **Ensure Dockerfiles and Nginx Config are in place:** Verify that `Dockerfile.django`, `Dockerfile.nginx`, and the `nginx/nginx.conf` file (inside an `nginx` directory) are correctly placed in your project root, as detailed in the project's documentation.
-    
-
-## Running the Application with Docker Compose
-
-Follow this sequence of commands to set up and start all services:
-
-1.  **Build Docker Images:** This command builds the Docker images for your `web` (Django/Bjoern) and `nginx` services based on their respective Dockerfiles.
-    
-    ```
-    docker compose build
-    
-    ```
-    
-2.  **Start Database and Redis Services:** It's crucial to start the `db` (PostgreSQL) and `redis` services first and wait for them to be fully initialized before proceeding.
-    
-    ```
-    docker compose up -d db redis
-    
-    ```
-    
-    -   **Wait for readiness:** Allow a few moments (e.g., 10-20 seconds) for the PostgreSQL database to fully initialize and pass its health check. You can monitor its status with `docker compose ps`.
-        
-3.  **Run Django Migrations:** Execute Django's database migrations to create the necessary tables in your PostgreSQL database.
-    
-    ```
-    docker compose run --rm web python manage.py makemigrations products_app
-    docker compose run --rm web python manage.py migrate
-    
-    ```
-    
-4.  **Collect Static Files:** Collect all static assets (CSS, JavaScript, images) into a single directory for Nginx to serve.
-    
-    ```
-    docker compose run --rm web python manage.py collectstatic --noinput
-    
-    ```
-    
-5.  **Create a Django Superuser (Optional but Recommended):** This allows you to access the Django admin panel. Follow the prompts to create your superuser.
-    
-    ```
-    docker compose run --rm web python manage.py createsuperuser
-    
-    ```
-    
-6.  **Start All Services:** Finally, bring up all remaining services (the `web` Django application and `nginx` reverse proxy).
-    
-    ```
-    docker compose up -d
-    
-    ```
-    
-
-### Accessing the Application
-
-Once all services are up and running:
-
--   **Web Application:** Open your web browser and navigate to `http://localhost:8099/products/upload-excel/`. You will be redirected to the login page.
-    
-    -   You can register a new user or log in with the superuser credentials you created.
-        
-    -   After logging in, you can upload Excel files, and they will be processed in the background by Celery.
-        
--   **API Documentation:** Access the interactive API documentation (Swagger UI) at `http://localhost:8099/api/docs`.
-    
--   **Django Admin:** Access the Django administration interface at `http://localhost:8099/admin/` (login with your superuser).
-    
-
-### Stopping the Application
-
-To stop all running Docker Compose services and remove their containers:
+1. **Клонируйте репозиторий:**
+```bash
+git clone <your-repository-url>
+cd django_project # Или как называется ваш корневой каталог проекта
 
 ```
+
+
+2. **Создайте файл `.env`:** Создайте файл с именем `.env` в корне вашего проекта (`django_project/`) и заполните его переменными окружения. Этот файл будет использоваться Docker Compose для настройки ваших сервисов.
+```env
+# .env
+POSTGRES_DB=django_db
+POSTGRES_USER=django_user
+POSTGRES_PASSWORD=django_password
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+DJANGO_SECRET_KEY=your_very_secret_and_long_key_for_django # ВАЖНО: ИЗМЕНИТЕ ЭТО В ПРОДАКШЕНЕ!
+DJANGO_DEBUG=True
+
+```
+
+
+* **`DJANGO_SECRET_KEY`**: Замените `your_very_secret_and_long_key_for_django` на надежный, случайно сгенерированный ключ. Вы можете сгенерировать его с помощью команды `python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'`.
+
+
+3. **Убедитесь, что Docker-файлы и конфигурация Nginx находятся на своих местах:** Проверьте, что файлы `Dockerfile.django`, `Dockerfile.nginx` и `nginx/nginx.conf` (внутри директории `nginx`) правильно размещены в корне вашего проекта, как описано в документации к проекту.
+
+## Запуск приложения с помощью Docker Compose
+
+Выполните следующую последовательность команд для настройки и запуска всех сервисов:
+
+1. **Сборка Docker-образов:** Эта команда собирает Docker-образы для ваших сервисов `web` (Django/Bjoern) и `nginx` на основе их соответствующих Docker-файлов.
+```bash
+docker compose build
+
+```
+
+
+2. **Запуск сервисов базы данных и Redis:** Крайне важно сначала запустить сервисы `db` (PostgreSQL) и `redis` и дождаться их полной инициализации перед продолжением.
+```bash
+docker compose up -d db redis
+
+```
+
+
+* **Ожидание готовности:** Подождите немного (например, 10–20 секунд), пока база данных PostgreSQL полностью инициализируется и пройдет проверку работоспособности (health check). Вы можете отслеживать ее статус с помощью команды `docker compose ps`.
+
+
+3. **Запуск миграций Django:** Выполните миграции базы данных Django для создания необходимых таблиц в базе данных PostgreSQL.
+```bash
+docker compose run --rm web python manage.py makemigrations products_app
+docker compose run --rm web python manage.py migrate
+
+```
+
+
+4. **Сборка статических файлов:** Соберите все статические ресурсы (CSS, JavaScript, изображения) в одну директорию, чтобы их мог отдавать Nginx.
+```bash
+docker compose run --rm web python manage.py collectstatic --noinput
+
+```
+
+
+5. **Создание суперпользователя Django (необязательно, но рекомендуется):** Это позволит вам получить доступ к панели администратора Django. Следуйте подсказкам для создания суперпользователя.
+```bash
+docker compose run --rm web python manage.py createsuperuser
+
+```
+
+
+6. **Запуск всех сервисов:** Наконец, поднимите все оставшиеся сервисы (веб-приложение Django `web` и обратный прокси `nginx`).
+```bash
+docker compose up -d
+
+```
+
+
+
+### Доступ к приложению
+
+Как только все сервисы будут запущены и заработают:
+
+* **Веб-приложение:** Откройте веб-браузер и перейдите по адресу `http://localhost:8099/products/upload-excel/`. Вы будете перенаправлены на страницу входа.
+* Вы можете зарегистрировать нового пользователя или войти в систему, используя созданные учетные данные суперпользователя.
+* После входа в систему вы сможете загружать файлы Excel, которые будут обрабатываться Celery в фоновом режиме.
+
+
+* **Документация API:** Доступ к интерактивной документации API (Swagger UI) можно получить по адресу `http://localhost:8099/api/docs`.
+* **Админка Django:** Доступ к интерфейсу администрирования Django по адресу `http://localhost:8099/admin/` (вход с помощью вашего суперпользователя).
+
+### Остановка приложения
+
+Чтобы остановить все запущенные сервисы Docker Compose и удалить их контейнеры:
+
+```bash
 docker compose down
 
 ```
 
-To stop services and also remove all associated volumes (including database data, static files, and media files, effectively resetting the application's data):
+Чтобы остановить сервисы, а также удалить все связанные с ними тома (volumes) (включая данные базы данных, статические и медиафайлы, что фактически приведет к сбросу данных приложения):
 
-```
+```bash
 docker compose down -v
 
 ```
 
-## Excel File Structure
+## Структура файла Excel
 
-The application expects an Excel file (`.xlsx`) with a single sheet and specific column headers. The headers are case-insensitive and will be normalized during processing. If the "Товарная группа" column is empty, the product will default to the "Автозапчасти" group.
+Приложение ожидает файл Excel (`.xlsx`) с одним листом и определенными заголовками столбцов. Заголовки нечувствительны к регистру и будут нормализованы во время обработки. Если столбец «Товарная группа» пуст, по умолчанию товару будет присвоена группа «Автозапчасти».
 
-**Expected Headers:**
+**Ожидаемые заголовки:**
 
-| Бренд (Brand) | Уникальный артикул (Unique Article) | Торговые номера (Trading Numbers/Crosses) | Описание (Description) | Дополнительное описание (Additional Description) | Товарная группа (Product Group) | Статус изделия (Product Status) | Характеристики (Specifications) | | :------------ | :---------------------------------- | :------------------------------------ | :--------------------- | :-------------------------------- | :------------------------------ | :------------------------------
+| Бренд (Brand) | Уникальный артикул (Unique Article) | Торговые номера (Trading Numbers/Crosses) | Описание (Description) | Дополнительное описание (Additional Description) | Товарная группа (Product Group) | Статус изделия (Product Status) | Характеристики (Specifications) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
